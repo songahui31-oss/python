@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="ko" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ⅲ-3 군집 분석 2차시 - 파이썬 코드 정밀 분석 및 시험 대비 웹앱</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: Fira Code, Noto Sans KR, Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            900: '#312e81'
+                        },
+                        codebg: '#0f172a',
+                        codecard: '#1e293b'
+                    },
+                    fontFamily: {
+                        sans: ['Noto Sans KR', 'Inter', 'sans-serif'],
+                        mono: ['Fira Code', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.05);
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(99, 102, 241, 0.4);
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: rgba(99, 102, 241, 0.7);
+        }
+        .code-line {
+            transition: all 0.15s ease-in-out;
+            cursor: pointer;
+        }
+        .code-line:hover {
+            background-color: rgba(99, 102, 241, 0.25);
+            border-left: 4px solid #6366f1;
+        }
+        .code-line.active-line {
+            background-color: rgba(99, 102, 241, 0.35);
+            border-left: 4px solid #818cf8;
+            font-weight: 600;
+        }
+        .blank-input {
+            border-bottom: 2px solid #6366f1;
+            background: rgba(99, 102, 241, 0.1);
+            color: #818cf8;
+            font-family: 'Fira Code', monospace;
+            font-weight: 700;
+            text-align: center;
+            outline: none;
+            transition: all 0.2s;
+        }
+        .blank-input:focus {
+            border-bottom-color: #38bdf8;
+            background: rgba(56, 189, 248, 0.15);
+        }
+        .blank-input.correct {
+            border-bottom-color: #34d399 !important;
+            background: rgba(52, 211, 153, 0.2) !important;
+            color: #34d399 !important;
+        }
+        .blank-input.wrong {
+            border-bottom-color: #f87171 !important;
+            background: rgba(248, 113, 113, 0.2) !important;
+            color: #f87171 !important;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 font-sans min-h-screen transition-colors duration-200">
+
+    <!-- Header / Navbar -->
+    <header class="sticky top-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- Title & Badge -->
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-cyan-500 flex items-center justify-center text-white shadow-md shadow-brand-500/20">
+                        <i class="fa-solid fa-code text-lg"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-bold px-2 py-0.5 rounded bg-brand-100 text-brand-700 dark:bg-brand-900/60 dark:text-brand-300">파이썬 코드 시험 특화</span>
+                            <span class="text-xs text-slate-500 dark:text-slate-400">데이터 과학 Ⅲ-3 군집 분석 (2차시)</span>
+                        </div>
+                        <h1 class="text-base sm:text-lg font-bold text-slate-900 dark:text-white leading-tight">쇼핑몰 고객 군집화 코드 완전 정복</h1>
+                    </div>
+                </div>
+
+                <!-- Controls -->
+                <div class="flex items-center space-x-3">
+                    <!-- Mastered Counter -->
+                    <div class="hidden sm:flex items-center space-x-2 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700">
+                        <i class="fa-solid fa-[#fa-laptop-code] fa-laptop-code text-brand-500 text-xs"></i>
+                        <span class="text-xs text-slate-600 dark:text-slate-300 font-medium">코드 완성도:</span>
+                        <span id="overall-code-progress" class="text-xs font-bold text-brand-600 dark:text-brand-400">0%</span>
+                    </div>
+
+                    <!-- Dark Mode Toggle -->
+                    <button id="theme-toggle" class="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition">
+                        <i id="theme-toggle-dark-icon" class="fa-solid fa-moon text-sm hidden"></i>
+                        <i id="theme-toggle-light-icon" class="fa-solid fa-sun text-sm hidden"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tab Navigation Bar -->
+            <nav class="flex space-x-1 sm:space-x-2 overflow-x-auto custom-scrollbar border-t border-slate-100 dark:border-slate-800/80 py-2" aria-label="Tabs">
+                <button onclick="switchTab('tab-breakdown')" id="btn-tab-breakdown" class="nav-tab active-tab flex items-center gap-2 px-3.5 py-2 text-xs sm:text-sm font-semibold rounded-lg transition whitespace-nowrap">
+                    <i class="fa-solid fa-code-line"></i> 1. 라인별 코드 정밀 해설
+                </button>
+                <button onclick="switchTab('tab-blank')" id="btn-tab-blank" class="nav-tab flex items-center gap-2 px-3.5 py-2 text-xs sm:text-sm font-semibold rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition whitespace-nowrap">
+                    <i class="fa-solid fa-pen-to-square"></i> 2. 코드 빈칸 채우기 트레이너
+                </button>
+                <button onclick="switchTab('tab-sandbox')" id="btn-tab-sandbox" class="nav-tab flex items-center gap-2 px-3.5 py-2 text-xs sm:text-sm font-semibold rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition whitespace-nowrap">
+                    <i class="fa-solid fa-sliders"></i> 3. 코드 파라미터 샌드박스 (실시간 출력)
+                </button>
+                <button onclick="switchTab('tab-cheatsheet')" id="btn-tab-cheatsheet" class="nav-tab flex items-center gap-2 px-3.5 py-2 text-xs sm:text-sm font-semibold rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition whitespace-nowrap">
+                    <i class="fa-solid fa-book-bookmark"></i> 4. 파이썬 함수 & 시험 족보
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+        <!-- ========================================== -->
+        <!-- TAB 1: Line-by-Line Code Breakdown -->
+        <!-- ========================================== -->
+        <section id="tab-breakdown" class="tab-content block space-y-6">
+            <!-- Header banner -->
+            <div class="bg-slate-900 text-white rounded-2xl p-5 border border-slate-800 shadow-md flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                <div>
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="px-2.5 py-0.5 rounded text-[11px] font-bold bg-brand-500/30 text-brand-300 border border-brand-500/40">Colab 셀 1-1 ~ 6-2</span>
+                        <span class="text-xs text-slate-400">클릭하면 라인별 파라미터/시험출제 포인트가 표시됩니다.</span>
+                    </div>
+                    <h2 class="text-lg font-bold">코드 한 줄 한 줄 정밀 검증 및 문법 분석기</h2>
+                </div>
+                <!-- Notebook Cell Section Filter -->
+                <div class="flex flex-wrap gap-1.5" id="code-section-filters">
+                    <button onclick="selectCodeSection(0)" class="sec-btn active-sec px-2.5 py-1 text-xs font-semibold rounded-lg bg-brand-600 text-white transition">전체</button>
+                    <button onclick="selectCodeSection(1)" class="sec-btn px-2.5 py-1 text-xs font-semibold rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 transition">1. 불러오기&다듬기</button>
+                    <button onclick="selectCodeSection(2)" class="sec-btn px-2.5 py-1 text-xs font-semibold rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 transition">2. EDA 시각화</button>
+                    <button onclick="selectCodeSection(3)" class="sec-btn px-2.5 py-1 text-xs font-semibold rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 transition">3. 성별 인코딩</button>
+                    <button onclick="selectCodeSection(4)" class="sec-btn px-2.5 py-1 text-xs font-semibold rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 transition">4. KMeans 모델링</button>
+                    <button onclick="selectCodeSection(5)" class="sec-btn px-2.5 py-1 text-xs font-semibold rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 transition">5. 결과해석&조건문</button>
+                    <button onclick="selectCodeSection(6)" class="sec-btn px-2.5 py-1 text-xs font-semibold rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 transition">6. 심화(n_init&crosstab)</button>
+                </div>
+            </div>
+
+            <!-- Two Column Layout: Left Editor / Right Explanation Card -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+                <!-- Left Column: Interactive Code Editor View (7 cols) -->
+                <div class="lg:col-span-7 space-y-4">
+                    <div class="bg-codebg rounded-2xl border border-slate-800 shadow-xl overflow-hidden">
+                        <div class="bg-slate-900/90 px-4 py-3 border-b border-slate-800 flex items-center justify-between">
+                            <div class="flex items-center space-x-2">
+                                <span class="w-3 h-3 rounded-full bg-rose-500 inline-block"></span>
+                                <span class="w-3 h-3 rounded-full bg-amber-500 inline-block"></span>
+                                <span class="w-3 h-3 rounded-full bg-emerald-500 inline-block"></span>
+                                <span class="ml-2 font-mono text-xs text-slate-400">군집2차시_쇼핑몰고객_군집화와해석.py</span>
+                            </div>
+                            <span class="text-[11px] font-mono text-indigo-400 font-medium">Python 3.10 / sklearn</span>
+                        </div>
+
+                        <div class="p-2 sm:p-4 font-mono text-xs sm:text-sm overflow-x-auto custom-scrollbar leading-relaxed" id="interactive-code-container">
+                            <!-- Dynamically generated code lines -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: Line Analysis Card & Exam Notes (5 cols) -->
+                <div class="lg:col-span-5 space-y-4">
+                    <div id="line-detail-card" class="bg-white dark:bg-slate-800/90 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-md space-y-4 sticky top-20">
+                        <div class="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-700">
+                            <div class="flex items-center gap-2">
+                                <span id="selected-line-num" class="px-2 py-0.5 rounded font-mono text-xs font-bold bg-brand-600 text-white">Line 1</span>
+                                <span id="selected-cell-id" class="text-xs font-bold text-slate-500 dark:text-slate-400">[Colab 1-2]</span>
+                            </div>
+                            <span id="selected-func-tag" class="text-xs font-bold px-2.5 py-0.5 rounded bg-indigo-100 text-indigo-700 dark:bg-indigo-900/60 dark:text-indigo-300">라이브러리 불러오기</span>
+                        </div>
+
+                        <!-- Code Line Preview -->
+                        <div class="bg-slate-900 text-amber-300 p-3 rounded-xl font-mono text-xs overflow-x-auto border border-slate-700" id="selected-line-code">
+                            import pandas as pd
+                        </div>
+
+                        <!-- Key Parameters & Functions Analysis -->
+                        <div class="space-y-3">
+                            <h4 class="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
+                                <i class="fa-solid fa-list-check text-brand-500"></i> 코드 구문 & 파라미터 정밀 해설
+                            </h4>
+                            <div id="selected-line-desc" class="text-xs text-slate-600 dark:text-slate-300 space-y-2 leading-relaxed">
+                                <!-- Explanation injection -->
+                            </div>
+                        </div>
+
+                        <!-- Exam Trick / Key Point Card -->
+                        <div class="p-3.5 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/60 rounded-xl space-y-1">
+                            <div class="flex items-center gap-1.5 font-bold text-xs text-amber-900 dark:text-amber-200">
+                                <i class="fa-solid fa-triangle-exclamation text-amber-500"></i>
+                                <span>시험 출제 핵심 포인트 & 함정</span>
+                            </div>
+                            <p id="selected-line-exam" class="text-xs text-amber-800 dark:text-amber-300 leading-relaxed">
+                                선택된 라인의 시험 출제 포인트가 이곳에 상세히 표시됩니다.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- TAB 2: Code Fill-in-the-Blank Trainer -->
+        <!-- ========================================== -->
+        <section id="tab-blank" class="tab-content hidden space-y-6">
+            <div class="bg-white dark:bg-slate-800/90 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-md flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-base sm:text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                        <i class="fa-solid fa-pen-to-square text-brand-500"></i> 파이썬 코드 빈칸 완성 트레이너 (총 12문항)
+                    </h2>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">시험지 코드 빈칸 문제에 직접 대비할 수 있도록 핵심 파라미터와 메서드를 직접 입력해보세요.</p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <span id="blank-score-text" class="text-sm font-bold text-brand-600 dark:text-brand-400">정답: 0 / 12</span>
+                    <button onclick="checkAllBlanks()" class="px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold transition shadow-md shadow-brand-500/20">
+                        <i class="fa-solid fa-check-double mr-1"></i> 전체 채점하기
+                    </button>
+                    <button onclick="resetAllBlanks()" class="px-3 py-2 rounded-xl bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold hover:bg-slate-300 transition">
+                        초기화
+                    </button>
+                </div>
+            </div>
+
+            <!-- Blank Questions List Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5" id="blank-cards-container">
+                <!-- Dynamically injected code blank exercises -->
+            </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- TAB 3: Interactive Parameter Sandbox -->
+        <!-- ========================================== -->
+        <section id="tab-sandbox" class="tab-content hidden space-y-6">
+            <div class="bg-white dark:bg-slate-800/90 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-md space-y-4">
+                <div>
+                    <h2 class="text-base sm:text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                        <i class="fa-solid fa-sliders text-brand-500"></i> 파이썬 코드 파라미터 라이브 시뮬레이터 (Sandbox)
+                    </h2>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">
+                        `n_init`, `random_state`, `성별 포함 여부` 파라미터를 조절하여 파이썬 콘솔 출력 및 군집 결과 변화를 눈으로 확인하세요!
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+                    <!-- Left: Control Panel (5 cols) -->
+                    <div class="lg:col-span-5 space-y-4 bg-slate-50 dark:bg-slate-900/60 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
+                        <h3 class="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-1.5 pb-2 border-b border-slate-200 dark:border-slate-700">
+                            <i class="fa-solid fa-gears text-brand-500"></i> 코드 파라미터 조절기
+                        </h3>
+
+                        <!-- Parameter 1: n_init -->
+                        <div class="space-y-1.5">
+                            <div class="flex justify-between items-center text-xs font-bold">
+                                <label class="text-slate-700 dark:text-slate-200">1. n_init (초기 중심점 시도 횟수)</label>
+                                <span id="sandbox-ninit-val" class="font-mono text-brand-600 dark:text-brand-400 bg-brand-100 dark:bg-brand-900/60 px-2 py-0.5 rounded">10 (수업 코드)</span>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2">
+                                <button onclick="setSandboxNInit(1)" id="btn-ninit-1" class="px-3 py-2 rounded-lg text-xs font-bold border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-200 transition">
+                                    n_init = 1 (불안정)
+                                </button>
+                                <button onclick="setSandboxNInit(10)" id="btn-ninit-10" class="px-3 py-2 rounded-lg text-xs font-bold bg-brand-600 text-white transition">
+                                    n_init = 10 (안정적)
+                                </button>
+                            </div>
+                            <p class="text-[11px] text-slate-500 dark:text-slate-400">n_init=1일 때는 random_state에 따라 결과 군집 인원수가 매번 변동합니다.</p>
+                        </div>
+
+                        <!-- Parameter 2: random_state -->
+                        <div class="space-y-1.5 pt-2 border-t border-slate-200 dark:border-slate-800">
+                            <div class="flex justify-between items-center text-xs font-bold">
+                                <label class="text-slate-700 dark:text-slate-200">2. random_state (난수 시드 고정)</label>
+                                <span id="sandbox-rs-val" class="font-mono text-brand-600 dark:text-brand-400 bg-brand-100 dark:bg-brand-900/60 px-2 py-0.5 rounded">0</span>
+                            </div>
+                            <input type="range" min="0" max="5" value="0" id="sandbox-rs-slider" oninput="updateSandbox()" class="w-full accent-brand-600">
+                            <p class="text-[11px] text-slate-500 dark:text-slate-400">0~5 시드 값을 조절해보세요.</p>
+                        </div>
+
+                        <!-- Parameter 3: Gender feature inclusion -->
+                        <div class="space-y-1.5 pt-2 border-t border-slate-200 dark:border-slate-800">
+                            <div class="flex justify-between items-center text-xs font-bold">
+                                <label class="text-slate-700 dark:text-slate-200">3. 학습 속성 대상 (성별 포함 vs 제외)</label>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2">
+                                <button onclick="setSandboxGender(true)" id="btn-gender-inc" class="px-3 py-2 rounded-lg text-xs font-bold bg-brand-600 text-white transition">
+                                    성별 포함 (4개 속성)
+                                </button>
+                                <button onclick="setSandboxGender(false)" id="btn-gender-exc" class="px-3 py-2 rounded-lg text-xs font-bold border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-200 transition">
+                                    성별 제외 (3개 속성)
+                                </button>
+                            </div>
+                            <p class="text-[11px] text-slate-500 dark:text-slate-400 font-medium text-amber-600 dark:text-amber-400">
+                                💡 성별을 빼도 crosstab 대각선 값이 일치하는지 확인하세요! (스케일 영향 극소)
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Right: Simulated Python Terminal & Output (7 cols) -->
+                    <div class="lg:col-span-7 space-y-3">
+                        <div class="bg-codebg rounded-xl border border-slate-800 p-4 font-mono text-xs text-slate-200 space-y-3 shadow-inner">
+                            <div class="flex items-center justify-between text-slate-400 text-[11px] pb-2 border-b border-slate-800">
+                                <span><i class="fa-solid fa-terminal mr-1"></i> Python Executed Code Preview</span>
+                                <span class="text-emerald-400">● Output Live</span>
+                            </div>
+
+                            <!-- Executed Code snippet -->
+                            <div id="sandbox-executed-code" class="text-amber-300 bg-slate-900/80 p-3 rounded-lg overflow-x-auto border border-slate-800">
+                                # Code generating...
+                            </div>
+
+                            <!-- Printed Terminal Output -->
+                            <div class="space-y-1">
+                                <span class="text-slate-400 text-[11px] font-bold block">>>> Terminal Print Output:</span>
+                                <pre id="sandbox-terminal-out" class="bg-slate-950 p-3 rounded-lg text-emerald-400 text-[11px] sm:text-xs overflow-x-auto leading-relaxed border border-slate-800">
+                                    # Output...
+                                </pre>
+                            </div>
+                        </div>
+
+                        <!-- Crosstab & Parameter Analysis Explanation -->
+                        <div id="sandbox-explanation-box" class="p-3.5 bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-900/60 rounded-xl text-xs space-y-1">
+                            <span class="font-bold text-indigo-900 dark:text-indigo-200 flex items-center gap-1">
+                                <i class="fa-solid fa-graduation-cap text-brand-500"></i> 코드 시뮬레이션 시험 분석:
+                            </span>
+                            <p id="sandbox-explanation-text" class="text-indigo-950 dark:text-indigo-300 leading-relaxed">
+                                설명이 이곳에 표시됩니다.
+                            </p>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- TAB 4: Python Code Cheatsheet & Exam Notes -->
+        <!-- ========================================== -->
+        <section id="tab-cheatsheet" class="tab-content hidden space-y-6">
+            <div class="bg-white dark:bg-slate-800/90 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-md space-y-4">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                        <h2 class="text-base sm:text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                            <i class="fa-solid fa-book-bookmark text-brand-500"></i> 파이썬 함수 & 파라미터 시험 출제 족보 요약
+                        </h2>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">교과서 코드와 확장 실습 코드 비교, 주요 메서드 파라미터 완전 총정리</p>
+                    </div>
+                    <div class="relative">
+                        <input type="text" id="cheatsheet-search" oninput="filterCheatsheet()" placeholder="함수명/파라미터 검색 (예: drop, KMeans, fit)..." 
+                            class="w-full sm:w-64 px-3 py-1.5 pl-8 text-xs rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-brand-500">
+                        <i class="fa-solid fa-magnifying-glass absolute left-2.5 top-2.5 text-xs text-slate-400"></i>
+                    </div>
+                </div>
+
+                <!-- Cheatsheet Table -->
+                <div class="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700">
+                    <table class="w-full text-left border-collapse text-xs sm:text-sm">
+                        <thead class="bg-slate-100 dark:bg-slate-900/90 text-slate-700 dark:text-slate-200 font-bold border-b border-slate-200 dark:border-slate-700">
+                            <tr>
+                                <th class="p-3 w-1/5">파이썬 함수 / 메서드</th>
+                                <th class="p-3 w-1/4">핵심 파라미터 & 속성</th>
+                                <th class="p-3 w-1/4">기능 및 동작 설명</th>
+                                <th class="p-3 w-3/12">⚠️ 시험 출제 포인트 / 교과서 차이</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cheatsheet-table-body" class="divide-y divide-slate-100 dark:divide-slate-800 font-mono">
+                            <!-- Injected by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="mt-12 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 py-6 text-center text-xs text-slate-500 dark:text-slate-400">
+        <p>2022 개정 데이터 과학 교과서 Ⅲ-3 군집 분석 2차시 파이썬 코드 시험 완전 대비 웹앱</p>
+        <p class="mt-1 font-mono text-[11px] text-slate-400">Mall_Customers.csv | sklearn.cluster.KMeans | sklearn.preprocessing.LabelEncoder</p>
+    </footer>
+
+    <!-- JavaScript Application Code -->
+    <script>
+        // Master Code Database (Line by line with Colab Cell ref, function tags, syntax details, exam traps)
+        const codeDatabase = [
+            {
+                lineNum: 1,
+                cellId: "1-1",
+                sec: 1,
+                code: "!pip install koreanize-matplotlib",
+                funcTag: "패키지 설치",
+                desc: "시보닉/매트플롯립 시각화 시 한국어 글꼴 깨짐 현상을 방지하기 위해 코랩 환경에 <code class='font-mono text-brand-600 font-bold'>koreanize-matplotlib</code> 라이브러리를 바깥 명령어(!)로 설치합니다.",
+                exam: "시험 문제에서 주피터/코랩 환경 특수 설치 명령어임을 구분하고, 한글 폰트 설정용 패키지임을 파악하세요."
+            },
+            {
+                lineNum: 2,
+                cellId: "1-2",
+                sec: 1,
+                code: "import numpy as np\nimport pandas as pd\nimport seaborn as sns\nimport matplotlib.pyplot as plt\nimport koreanize_matplotlib",
+                funcTag: "라이브러리 임포트",
+                desc: "• <code class='font-mono font-bold text-brand-600'>pandas (pd)</code>: 표형 데이터(DataFrame) 관리<br>• <code class='font-mono font-bold text-brand-600'>seaborn (sns)</code>: 통계 시각화 그래프(countplot, pairplot, scatterplot)<br>• <code class='font-mono font-bold text-brand-600'>numpy (np)</code>: 다차원 수치 배열 및 조건문 처리",
+                exam: "각 라이브러리의 축약 별칭(pd, sns, np, plt)과 주요 용도를 연결하는 문제가 단골 출제됩니다."
+            },
+            {
+                lineNum: 3,
+                cellId: "1-4",
+                sec: 1,
+                code: "df = pd.read_csv('Mall_Customers.csv')\ndf.head()",
+                funcTag: "데이터 읽기",
+                desc: "<code class='font-mono font-bold text-brand-600'>pd.read_csv()</code> 함수로 CSV 파일을 읽어 DataFrame 객체 <code class='font-mono'>df</code>로 저장하고, <code class='font-mono'>head()</code>로 상위 5개 행을 확인합니다.",
+                exam: "Mall_Customers.csv는 고객 번호, 성별, 나이, 연 수입, 소비 점수 5개 열을 가집니다."
+            },
+            {
+                lineNum: 4,
+                cellId: "1-5",
+                sec: 1,
+                code: "df.drop('고객 번호', axis=1, inplace=True)\ndf.info()",
+                funcTag: "데이터 전처리 (열 삭제)",
+                desc: "• <code class='font-mono font-bold text-brand-600'>axis=1</code>: 열(Column) 방향 삭제 (axis=0은 행 삭제)<br>• <code class='font-mono font-bold text-brand-600'>inplace=True</code>: 원본 df를 직접 변형하여 저장<br>• <code class='font-mono font-bold text-brand-600'>info()</code>: 200명 행, 4개 열, 결측치 없음 확인",
+                exam: "★ 빈출: '고객 번호'는 단순 식별자(ID)이므로 군집 특징이 아니어서 삭제함! `axis=1`과 `inplace=True` 빈칸 출제율 매우 높음!"
+            },
+            {
+                lineNum: 5,
+                cellId: "2-1 & 2-2",
+                sec: 2,
+                code: "sns.countplot(x='성별', data=df)\ndf['성별'].value_counts()",
+                funcTag: "EDA 성별 막대그래프",
+                desc: "범주형 데이터인 '성별'의 항목별 개수를 막대그래프로 시각화하고, <code class='font-mono font-bold text-brand-600'>value_counts()</code>로 정확한 인원수(여성 112명, 남성 88명)를 구합니다.",
+                exam: "countplot의 필수 인자: `x='열이름'`, `data=데이터프레임`"
+            },
+            {
+                lineNum: 6,
+                cellId: "2-3",
+                sec: 2,
+                code: "sns.pairplot(data=df)\nplt.show()",
+                funcTag: "EDA 산점도 행렬",
+                desc: "수치형 속성끼리 모든 조합의 산점도를 3×3 행렬로 표시합니다. 대각선은 각 속성의 히스토그램(분포)입니다.",
+                exam: "★ 시험 체크: '성별'은 문자열이므로 자동 제외되어 3×3=9칸이 됨. 데이터 덩어리가 5개로 가장 뚜렷한 칸은 (연 수입) × (소비 점수)임!"
+            },
+            {
+                lineNum: 7,
+                cellId: "3-1",
+                sec: 3,
+                code: "from sklearn.preprocessing import LabelEncoder\nencoder = LabelEncoder()\ndf['성별'] = encoder.fit_transform(df['성별'])",
+                funcTag: "범주형 인코딩",
+                desc: "사이킷런 <code class='font-mono font-bold text-brand-600'>LabelEncoder</code>를 이용해 문자열인 성별 데이터를 수치(0, 1)로 변환합니다.",
+                exam: "왜 변환하는가? K-평균 알고리즘은 거리를 수치로만 계산할 수 있기 때문!"
+            },
+            {
+                lineNum: 8,
+                cellId: "3-2",
+                sec: 3,
+                code: "for i, name in enumerate(encoder.classes_):\n    print(name, '→', i)\n# 출력: Female → 0 , Male → 1",
+                funcTag: "인코딩 순서 확인",
+                desc: "<code class='font-mono font-bold text-brand-600'>encoder.classes_</code> 속성으로 변환된 범주 이름을 알파벳순으로 확인합니다.",
+                exam: "★ 교과서 함정 문제: 교과서 본문은 '남성 0, 여성 1'로 설명하나, 실제 코드 실행 결과는 알파벳순이므로 Female=0, Male=1로 변환됨!"
+            },
+            {
+                lineNum: 9,
+                cellId: "3-3",
+                sec: 4,
+                code: "from sklearn.cluster import KMeans\nkmeans = KMeans(n_clusters=5, n_init=10, random_state=0)\nkmeans.fit(df)",
+                funcTag: "KMeans 모델 생성 & 학습",
+                desc: "• <code class='font-mono font-bold text-brand-600'>n_clusters=5</code>: 군집 개수 k=5 지정<br>• <code class='font-mono font-bold text-brand-600'>n_init=10</code>: 시작점을 10번 무작위로 시도해 최적 결과 고름<br>• <code class='font-mono font-bold text-brand-600'>random_state=0</code>: 시드 고정으로 동일한 결과 보장<br>• <code class='font-mono font-bold text-brand-600'>fit(df)</code>: 데이터로 학습 수행",
+                exam: "★ 교과서 코드 `KMeans(n_clusters=5)`와 달리 수업 코드는 무작위 초기점에 의한 결과 변동을 막기 위해 n_init=10, random_state=0을 추가함!"
+            },
+            {
+                lineNum: 10,
+                cellId: "3-3 & 3-4",
+                sec: 4,
+                code: "print(kmeans.cluster_centers_)\ncenters = pd.DataFrame(kmeans.cluster_centers_, columns=df.columns).round(2)",
+                funcTag: "중심점 좌표 추출",
+                desc: "<code class='font-mono font-bold text-brand-600'>kmeans.cluster_centers_</code>는 각 군집의 중심점 좌표(군집에 속한 데이터들의 평균값)를 가집니다.",
+                exam: "표의 한 줄 = 군집 하나의 중심점. '성별' 중심점 수치(예: 0.46)는 남성(Male=1)의 비율(46%)을 의미함!"
+            },
+            {
+                lineNum: 11,
+                cellId: "3-3 & 3-5",
+                sec: 4,
+                code: "result_by_sklearn = df.copy()\nresult_by_sklearn['군집'] = kmeans.labels_",
+                funcTag: "결과 저장 (df.copy)",
+                desc: "<code class='font-mono font-bold text-brand-600'>kmeans.labels_</code>는 고객 200명의 할당된 군집 번호(0~4) 배열입니다. <code class='font-mono'>df.copy()</code>로 원본을 보호하며 '군집' 열을 추가합니다.",
+                exam: "왜 df.copy()를 쓰는가? 원본 df에 군집 열이 섞이지 않아야 3차시 실루엣 계수 계산에 그대로 활용 가능하기 때문!"
+            },
+            {
+                lineNum: 12,
+                cellId: "5-2 & 5-3",
+                sec: 5,
+                code: "summary = result_by_sklearn.groupby('군집').mean().round(1)\nratio = summary[col] / overall[col]\ncompare[col] = np.where(ratio > 1.15, '높음', \n               np.where(ratio < 0.85, '낮음', '보통'))",
+                funcTag: "군집별 평균 & 비교",
+                desc: "• <code class='font-mono font-bold text-brand-600'>groupby('군집').mean()</code>: 군집별 평균 계산<br>• <code class='font-mono font-bold text-brand-600'>np.where()</code>: 전체 평균 대비 +15% 초과시 '높음', -15% 미만시 '낮음', 그 외 '보통' 판단",
+                exam: "np.where(조건식, 참일때값, 거짓일때값) 중첩 구조 빈칸 문제 출제 대비!"
+            },
+            {
+                lineNum: 13,
+                cellId: "6-1",
+                sec: 6,
+                code: "for rs in range(6):\n    km = KMeans(n_clusters=5, n_init=1, random_state=rs).fit(df)\n    sizes = sorted(pd.Series(km.labels_).value_counts().tolist(), reverse=True)",
+                funcTag: "시작점 1회 시도 영향 (n_init=1)",
+                desc: "<code class='font-mono font-bold text-brand-600'>n_init=1</code>로 두면 무작위 시작점에 따라 군집 구성 인원수가 [53, 50, 39...]에서 [79, 39, 36...] 등으로 계속 변합니다.",
+                exam: "시작점을 한 번만 정하면(n_init=1) 실행할 때마다 결과가 달라질 수 있음을 입증하는 실험 코드!"
+            },
+            {
+                lineNum: 14,
+                cellId: "6-2",
+                sec: 6,
+                code: "km3 = KMeans(n_clusters=5, n_init=10, random_state=0).fit(df[['나이', '연 수입', '소비 점수(1-100)']])\npd.crosstab(kmeans.labels_, km3.labels_, rownames=['성별 포함'], colnames=['성별 제외'])",
+                funcTag: "성별 제외 영향 분석 (crosstab)",
+                desc: "<code class='font-mono font-bold text-brand-600'>pd.crosstab()</code> 교차표를 통해 성별 포함 결과와 성별 제외 결과의 군집 매핑을 비교합니다.",
+                exam: "★ 서술형 핵심: 성별(0~1)은 나이(18~70), 연수입(15~137)에 비해 값의 범위(스케일)가 너무 작아서 거리 계산에 영향이 거의 없음! (5차시 정규화 연결)"
+            }
+        ];
+
+        // Fill-in-the-blank Questions (12 items)
+        const blankQuestions = [
+            {
+                id: 1,
+                cellId: "[Colab 1-5]",
+                title: "열 삭제 파라미터 완성",
+                codeSnippet: "df.drop('고객 번호', axis=<input id='blank-1' class='blank-input w-12' placeholder='?'>, inplace=<input id='blank-2' class='blank-input w-16' placeholder='?'>)",
+                answers: ["1", "True"],
+                hints: ["열 방향 삭제는 1", "원본을 직접 변경할 때는 True"],
+                examNote: "axis=1은 열 방향 삭제, inplace=True는 원본 df에 즉시 반영을 뜻합니다."
+            },
+            {
+                id: 2,
+                cellId: "[Colab 3-1]",
+                title: "LabelEncoder 학습 및 변환 메서드",
+                codeSnippet: "encoder = LabelEncoder()\ndf['성별'] = encoder.<input id='blank-3' class='blank-input w-32' placeholder='?'>(df['성별'])",
+                answers: ["fit_transform"],
+                hints: ["학습(fit)과 변환(transform)을 동시에 수행하는 메서드"],
+                examNote: "fit_transform()은 범주형 문자 데이터를 숫자로 변환합니다."
+            },
+            {
+                id: 3,
+                cellId: "[Colab 3-3]",
+                title: "KMeans 파라미터 완성",
+                codeSnippet: "kmeans = KMeans(n_clusters=<input id='blank-4' class='blank-input w-10' placeholder='?'>, n_init=<input id='blank-5' class='blank-input w-12' placeholder='?'>, random_state=0)",
+                answers: ["5", "10"],
+                hints: ["군집 개수 k=5", "수업에서 지정한 시작점 시도 횟수 10"],
+                examNote: "n_clusters=5로 5개 군집을 만들고, n_init=10으로 10번시도하여 최적의 시작점을 고릅니다."
+            },
+            {
+                id: 4,
+                cellId: "[Colab 3-3 & 3-4]",
+                title: "학습 및 속성 접근",
+                codeSnippet: "kmeans.<input id='blank-6' class='blank-input w-16' placeholder='?'>(df)\nprint(kmeans.<input id='blank-7' class='blank-input w-36' placeholder='?'>)",
+                answers: ["fit", "cluster_centers_"],
+                hints: ["모델 학습 메서드 fit", "중심점 좌표 속성은 뒤에 언더바(_) 포함"],
+                examNote: "kmeans.fit(df)로 학습하고 cluster_centers_ 속성으로 군집 중심 좌표를 구합니다."
+            },
+            {
+                id: 5,
+                cellId: "[Colab 3-5]",
+                title: "결과 저장 및 원본 복사",
+                codeSnippet: "result_by_sklearn = df.<input id='blank-8' class='blank-input w-20' placeholder='?'/>()\nresult_by_sklearn['군집'] = kmeans.<input id='blank-9' class='blank-input w-24' placeholder='?'/>",
+                answers: ["copy", "labels_"],
+                hints: ["데이터프레임 복사 메서드 copy", "할당된 군집 번호 속성 labels_"],
+                examNote: "df.copy()로 원본을 보존해야 3차시 실루엣 계수 평가에 사용할 수 있습니다."
+            },
+            {
+                id: 6,
+                cellId: "[Colab 5-2 & 6-2]",
+                title: "그룹별 평균 및 교차표 함수",
+                codeSnippet: "summary = result_by_sklearn.<input id='blank-10' class='blank-input w-24' placeholder='?'/>('군집').mean()\npd.<input id='blank-11' class='blank-input w-24' placeholder='?'/>(kmeans.labels_, km3.labels_)",
+                answers: ["groupby", "crosstab"],
+                hints: ["지정한 열 기준으로 그룹 묶기 groupby", "두 군집 결과 교차표 비교 crosstab"],
+                examNote: "groupby('군집').mean()으로 군집별 평균을 계산하고, pd.crosstab()으로 두 군집 결과를 비교합니다."
+            }
+        ];
+
+        // Cheatsheet Database
+        const cheatsheetData = [
+            { func: "pd.read_csv()", args: "filepath", desc: "CSV 파일 읽어 데이터프레임으로 변환", exam: "교과서 코드 시작점" },
+            { func: "df.drop()", args: "labels, axis=1, inplace=True", desc: "지정한 행 또는 열을 삭제", exam: "★ axis=1(열), inplace=True(원본반영) 빈출" },
+            { func: "df.info()", args: "없음", desc: "열 이름, 데이터 개수, 자료형(int, object) 확인", exam: "결측치 유무 및 문자열 열 파악" },
+            { func: "sns.countplot()", args: "x='열이름', data=df", desc: "범주형 데이터의 항목별 개수를 막대그래프로 표시", exam: "성별 인원수 시각화" },
+            { func: "sns.pairplot()", args: "data=df", desc: "수치형 속성 간의 산점도를 행렬 형태로 일괄 생성", exam: "문자열 성별 제외됨 (3×3=9칸)" },
+            { func: "LabelEncoder()", args: "fit_transform(df['열'])", desc: "문자열 범주형 데이터를 숫자로 변환", exam: "★ 알파벳순 변환 (Female=0, Male=1)" },
+            { func: "encoder.classes_", args: "속성", desc: "인코딩된 범주 이름의 순서 목록 반환", exam: "0번과 1번이 어떤 범주인지 확인" },
+            { func: "KMeans()", args: "n_clusters=5, n_init=10, random_state=0", desc: "K-평균 군집 모델 객체 생성", exam: "교과서: KMeans(n_clusters=5), 수업: n_init, random_state 추가" },
+            { func: "kmeans.fit()", args: "df", desc: "입력 데이터로 중심점 이동 반복 학습 수행", exam: "비지도 학습 실행 메서드" },
+            { func: "cluster_centers_", args: "속성", desc: "학습 완료된 k개 군집의 중심점 좌표 반환", exam: "각 군집 고객들의 평균 수치" },
+            { func: "kmeans.labels_", args: "속성", desc: "각 데이터에 할당된 군집 번호(0~k-1) 배열", exam: "df에 '군집' 열로 추가" },
+            { func: "df.copy()", args: "없음", desc: "원본 데이터프레임의 독립된 복사본 생성", exam: "3차시 실루엣 계수 계산용 df 원본 보존" },
+            { func: "df.groupby()", args: "by='열이름'", desc: "지정한 열의 값에 따라 데이터 그룹화", exam: "groupby('군집').mean() 으로 군집별 평균 계산" },
+            { func: "np.where()", args: "cond, true_val, false_val", desc: "조건식에 따른 값 선택 (삼항연산자)", exam: "비율 > 1.15 '높음', < 0.85 '낮음' 판정" },
+            { func: "pd.crosstab()", args: "index, columns", desc: "두 범주형 변수의 교차표(Cross Tabulation) 생성", exam: "성별 포함 vs 제외 군집 결과 일치 여부 검증" }
+        ];
+
+        // Active State Variables
+        let currentSectionFilter = 0;
+        let selectedLineIndex = 0;
+
+        // Theme Toggle Logic
+        function initTheme() {
+            const darkIcon = document.getElementById('theme-toggle-dark-icon');
+            const lightIcon = document.getElementById('theme-toggle-light-icon');
+
+            if (localStorage.getItem('color-theme') === 'dark' || (!('color-theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+                lightIcon.classList.remove('hidden');
+            } else {
+                document.documentElement.classList.remove('dark');
+                darkIcon.classList.remove('hidden');
+            }
+
+            document.getElementById('theme-toggle').addEventListener('click', function() {
+                darkIcon.classList.toggle('hidden');
+                lightIcon.classList.toggle('hidden');
+
+                if (document.documentElement.classList.contains('dark')) {
+                    document.documentElement.classList.remove('dark');
+                    localStorage.setItem('color-theme', 'light');
+                } else {
+                    document.documentElement.classList.add('dark');
+                    localStorage.setItem('color-theme', 'dark');
+                }
+            });
+        }
+
+        // Tab Switch Logic
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById(tabId).classList.remove('hidden');
+
+            document.querySelectorAll('.nav-tab').forEach(btn => {
+                btn.classList.remove('active-tab', 'bg-brand-600', 'text-white');
+                btn.classList.add('text-slate-600', 'dark:text-slate-400', 'hover:bg-slate-100', 'dark:hover:bg-slate-800');
+            });
+
+            const activeBtn = document.getElementById(`btn-${tabId}`);
+            if (activeBtn) {
+                activeBtn.classList.add('active-tab', 'bg-brand-600', 'text-white');
+                activeBtn.classList.remove('text-slate-600', 'dark:text-slate-400', 'hover:bg-slate-100', 'dark:hover:bg-slate-800');
+            }
+
+            if (tabId === 'tab-sandbox') {
+                updateSandbox();
+            }
+        }
+
+        // Render Tab 1 Code Editor lines
+        function renderCodeEditor() {
+            const container = document.getElementById('interactive-code-container');
+            if (!container) return;
+
+            let filtered = codeDatabase;
+            if (currentSectionFilter > 0) {
+                filtered = codeDatabase.filter(item => item.sec === currentSectionFilter);
+            }
+
+            container.innerHTML = filtered.map((item, idx) => {
+                const isActive = (item.lineNum - 1) === selectedLineIndex;
+                const lines = item.code.split('\n');
+
+                return `
+                    <div onclick="selectCodeLine(${item.lineNum - 1})" class="code-line p-2 rounded-lg mb-1 flex items-start gap-3 ${isActive ? 'active-line' : ''}">
+                        <div class="select-none font-mono text-xs text-slate-500 w-8 text-right flex-shrink-0 pt-0.5">
+                            L${item.lineNum}
+                        </div>
+                        <div class="flex-1 overflow-x-auto">
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="text-[10px] font-bold px-1.5 py-0.2 rounded bg-slate-800 text-brand-400 border border-slate-700">[Colab ${item.cellId}]</span>
+                                <span class="text-[10px] font-bold px-1.5 py-0.2 rounded bg-indigo-900/60 text-indigo-300">${item.funcTag}</span>
+                            </div>
+                            <pre class="text-xs sm:text-sm font-mono text-slate-100 leading-snug"><code>${escapeHtml(item.code)}</code></pre>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            updateLineDetailCard(codeDatabase[selectedLineIndex] || codeDatabase[0]);
+        }
+
+        function escapeHtml(text) {
+            return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        }
+
+        function selectCodeSection(secNum) {
+            currentSectionFilter = secNum;
+            document.querySelectorAll('.sec-btn').forEach((btn, idx) => {
+                if (idx === secNum) {
+                    btn.classList.add('bg-brand-600', 'text-white');
+                    btn.classList.remove('bg-slate-800', 'text-slate-300');
+                } else {
+                    btn.classList.remove('bg-brand-600', 'text-white');
+                    btn.classList.add('bg-slate-800', 'text-slate-300');
+                }
+            });
+            renderCodeEditor();
+        }
+
+        function selectCodeLine(lineIdx) {
+            selectedLineIndex = lineIdx;
+            renderCodeEditor();
+        }
+
+        function updateLineDetailCard(item) {
+            document.getElementById('selected-line-num').textContent = `Line ${item.lineNum}`;
+            document.getElementById('selected-cell-id').textContent = `[Colab ${item.cellId}]`;
+            document.getElementById('selected-func-tag').textContent = item.funcTag;
+            document.getElementById('selected-line-code').textContent = item.code;
+            document.getElementById('selected-line-desc').innerHTML = item.desc;
+            document.getElementById('selected-line-exam').innerHTML = item.exam;
+        }
+
+        // Render Tab 2 Code Fill-in-the-Blank Exercises
+        function renderBlankExercises() {
+            const container = document.getElementById('blank-cards-container');
+            if (!container) return;
+
+            container.innerHTML = blankQuestions.map((q, idx) => {
+                return `
+                    <div class="bg-white dark:bg-slate-800/90 rounded-xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold px-2 py-0.5 rounded bg-brand-100 text-brand-700 dark:bg-brand-900/60 dark:text-brand-300">
+                                문제 ${q.id} ${q.cellId}
+                            </span>
+                            <span class="text-xs font-bold text-slate-500 dark:text-slate-400">${q.title}</span>
+                        </div>
+
+                        <div class="bg-codebg p-4 rounded-xl font-mono text-xs text-slate-100 overflow-x-auto leading-relaxed border border-slate-800">
+                            ${q.codeSnippet}
+                        </div>
+
+                        <div class="flex items-center justify-between text-xs pt-1">
+                            <span class="text-slate-500 dark:text-slate-400">💡 힌트: ${q.hints.join(', ')}</span>
+                            <button onclick="checkBlankQuestion(${q.id})" class="px-3 py-1 rounded-lg bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 font-bold hover:bg-indigo-200 transition">
+                                채점
+                            </button>
+                        </div>
+
+                        <div id="blank-feedback-${q.id}" class="hidden p-3 rounded-lg text-xs space-y-1">
+                            <!-- Feedback injected here -->
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function checkBlankQuestion(qId) {
+            const q = blankQuestions.find(item => item.id === qId);
+            if (!q) return;
+
+            let allCorrect = true;
+            q.answers.forEach((ans, aIdx) => {
+                const inputEl = document.getElementById(`blank-${qId === 1 ? aIdx + 1 : (qId === 2 ? 3 : (qId === 3 ? aIdx + 4 : (qId === 4 ? aIdx + 6 : (qId === 5 ? aIdx + 8 : aIdx + 10))))}`);
+                if (inputEl) {
+                    const userVal = inputEl.value.trim();
+                    if (userVal.toLowerCase() === ans.toLowerCase()) {
+                        inputEl.classList.remove('wrong');
+                        inputEl.classList.add('correct');
+                    } else {
+                        inputEl.classList.remove('correct');
+                        inputEl.classList.add('wrong');
+                        allCorrect = false;
+                    }
+                }
+            });
+
+            const feedbackEl = document.getElementById(`blank-feedback-${qId}`);
+            feedbackEl.classList.remove('hidden', 'bg-emerald-50', 'bg-rose-50', 'dark:bg-emerald-950/40', 'dark:bg-rose-950/40');
+
+            if (allCorrect) {
+                feedbackEl.classList.add('bg-emerald-50', 'dark:bg-emerald-950/40', 'border', 'border-emerald-200', 'dark:border-emerald-900/60');
+                feedbackEl.innerHTML = `
+                    <div class="font-bold text-emerald-800 dark:text-emerald-200">🎉 정답입니다!</div>
+                    <p class="text-emerald-700 dark:text-emerald-300">${q.examNote}</p>
+                `;
+            } else {
+                feedbackEl.classList.add('bg-rose-50', 'dark:bg-rose-950/40', 'border', 'border-rose-200', 'dark:border-rose-900/60');
+                feedbackEl.innerHTML = `
+                    <div class="font-bold text-rose-800 dark:text-rose-200">❌ 오답이 있습니다. (정답: ${q.answers.join(', ')})</div>
+                    <p class="text-rose-700 dark:text-rose-300">${q.examNote}</p>
+                `;
+            }
+            updateBlankOverallScore();
+        }
+
+        function checkAllBlanks() {
+            blankQuestions.forEach(q => checkBlankQuestion(q.id));
+        }
+
+        function resetAllBlanks() {
+            document.querySelectorAll('.blank-input').forEach(input => {
+                input.value = '';
+                input.classList.remove('correct', 'wrong');
+            });
+            document.querySelectorAll('[id^="blank-feedback-"]').forEach(fb => fb.classList.add('hidden'));
+            updateBlankOverallScore();
+        }
+
+        function updateBlankOverallScore() {
+            let correctCount = 0;
+            blankQuestions.forEach(q => {
+                let qCorrect = true;
+                q.answers.forEach((ans, aIdx) => {
+                    const inputEl = document.getElementById(`blank-${q.id === 1 ? aIdx + 1 : (q.id === 2 ? 3 : (q.id === 3 ? aIdx + 4 : (q.id === 4 ? aIdx + 6 : (q.id === 5 ? aIdx + 8 : aIdx + 10))))}`);
+                    if (!inputEl || inputEl.value.trim().toLowerCase() !== ans.toLowerCase()) {
+                        qCorrect = false;
+                    }
+                });
+                if (qCorrect) correctCount++;
+            });
+
+            document.getElementById('blank-score-text').textContent = `정답: ${correctCount} / 6 항목 완료`;
+            const pct = Math.round((correctCount / 6) * 100);
+            document.getElementById('overall-code-progress').textContent = `${pct}%`;
+        }
+
+        // Sandbox Simulator Logic
+        let sandboxState = {
+            nInit: 10,
+            rs: 0,
+            includeGender: true
+        };
+
+        function setSandboxNInit(val) {
+            sandboxState.nInit = val;
+            document.getElementById('sandbox-ninit-val').textContent = val === 1 ? '1 (n_init=1)' : '10 (n_init=10)';
+
+            const btn1 = document.getElementById('btn-ninit-1');
+            const btn10 = document.getElementById('btn-ninit-10');
+            if (val === 1) {
+                btn1.className = 'px-3 py-2 rounded-lg text-xs font-bold bg-brand-600 text-white transition';
+                btn10.className = 'px-3 py-2 rounded-lg text-xs font-bold border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-200 transition';
+            } else {
+                btn10.className = 'px-3 py-2 rounded-lg text-xs font-bold bg-brand-600 text-white transition';
+                btn1.className = 'px-3 py-2 rounded-lg text-xs font-bold border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-200 transition';
+            }
+            updateSandbox();
+        }
+
+        function setSandboxGender(inc) {
+            sandboxState.includeGender = inc;
+            const btnInc = document.getElementById('btn-gender-inc');
+            const btnExc = document.getElementById('btn-gender-exc');
+
+            if (inc) {
+                btnInc.className = 'px-3 py-2 rounded-lg text-xs font-bold bg-brand-600 text-white transition';
+                btnExc.className = 'px-3 py-2 rounded-lg text-xs font-bold border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-200 transition';
+            } else {
+                btnExc.className = 'px-3 py-2 rounded-lg text-xs font-bold bg-brand-600 text-white transition';
+                btnInc.className = 'px-3 py-2 rounded-lg text-xs font-bold border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-200 transition';
+            }
+            updateSandbox();
+        }
+
+        function updateSandbox() {
+            sandboxState.rs = parseInt(document.getElementById('sandbox-rs-slider').value);
+            document.getElementById('sandbox-rs-val').textContent = sandboxState.rs;
+
+            const codePreview = document.getElementById('sandbox-executed-code');
+            const terminalOut = document.getElementById('sandbox-terminal-out');
+            const explanationText = document.getElementById('sandbox-explanation-text');
+
+            // Simulated cluster outputs based on Colab cell [6-1] & [6-2]
+            const nInit1Results = {
+                0: [53, 50, 39, 34, 24],
+                1: [79, 39, 36, 23, 23],
+                2: [48, 42, 40, 38, 32],
+                3: [62, 51, 35, 30, 22],
+                4: [79, 39, 36, 23, 23],
+                5: [55, 45, 40, 35, 25]
+            };
+
+            const nInit10Results = [79, 39, 36, 23, 23]; // Always stable with n_init=10 & random_state=0
+
+            let execCodeStr = "";
+            let termStr = "";
+            let expStr = "";
+
+            if (sandboxState.includeGender) {
+                execCodeStr = `kmeans = KMeans(n_clusters=5, n_init=${sandboxState.nInit}, random_state=${sandboxState.rs})\nkmeans.fit(df)\nprint('군집별 인원 구성:', pd.Series(kmeans.labels_).value_counts().tolist())`;
+
+                if (sandboxState.nInit === 1) {
+                    const sizes = nInit1Results[sandboxState.rs] || [79, 39, 36, 23, 23];
+                    termStr = `random_state = ${sandboxState.rs} → 군집별 인원 ${JSON.stringify(sizes)}`;
+                    expStr = `<b>[Colab 6-1 분석]</b> <span class="text-rose-600 dark:text-rose-400 font-bold">n_init=1</span>로 설정 시, random_state=${sandboxState.rs} 시드 값에 따라 초기 중심점 위치가 달라져 군집 구성 인원수가 매번 변경됩니다. 따라서 수업에서는 결과를 고정하기 위해 <b>n_init=10, random_state=0</b>을 지정했습니다.`;
+                } else {
+                    termStr = `random_state = ${sandboxState.rs} → 군집별 인원 [79, 39, 36, 23, 23]\n(10번 시도 중 가장 우수한 수렴 결과를 자동으로 선택함)`;
+                    expStr = `<b>[Colab 3-3 분석]</b> <span class="text-emerald-600 dark:text-emerald-400 font-bold">n_init=10</span>으로 설정하면 시작점을 10번 무작위로 다르게 배치한 후 가장 묶임이 좋은 최적 결과를 자동 선택하므로 매우 안정적인 결과를 얻습니다.`;
+                }
+            } else {
+                execCodeStr = `# [6-2] 성별 제외 후 crosstab 비교\nkm3 = KMeans(n_clusters=5, n_init=${sandboxState.nInit}, random_state=${sandboxState.rs}).fit(df[['나이', '연 수입', '소비 점수(1-100)']])\npd.crosstab(kmeans.labels_, km3.labels_, rownames=['성별 포함'], colnames=['성별 제외'])`;
+
+                termStr = `성별 제외  0   1   2   3   4\n성별 포함                    \n0        23   0   0   0   0\n1         0  39   0   0   0\n2         0   0  79   0   0\n3         0   0   0  23   0\n4         0   0   0   0  36`;
+
+                expStr = `<b>[Colab 6-2 crosstab 분석]</b> 교차표의 숫자가 대각선 한 칸씩에만 100% 위치합니다! 이는 <b>'성별' 속성을 빼고 군집화해도 묶음 결과가 완벽히 동일함</b>을 의미합니다.<br>💡 <b>원인:</b> 성별 값(0 또는 1)은 나이(18~70), 연 수입(15~137)에 비해 값의 범위(스케일)가 너무 작아서 거리 계산에 영향을 주지 못했기 때문입니다. (5차시 정규화 필요성 연계)`;
+            }
+
+            codePreview.innerHTML = `<code>${escapeHtml(execCodeStr)}</code>`;
+            terminalOut.textContent = termStr;
+            explanationText.innerHTML = expStr;
+        }
+
+        // Render Tab 4 Cheatsheet Table
+        function renderCheatsheet(filterQuery = "") {
+            const tbody = document.getElementById('cheatsheet-table-body');
+            if (!tbody) return;
+
+            const q = filterQuery.toLowerCase().trim();
+            const filtered = cheatsheetData.filter(item => {
+                return item.func.toLowerCase().includes(q) ||
+                       item.args.toLowerCase().includes(q) ||
+                       item.desc.toLowerCase().includes(q) ||
+                       item.exam.toLowerCase().includes(q);
+            });
+
+            tbody.innerHTML = filtered.map(item => {
+                return `
+                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/40">
+                        <td class="p-3 font-bold text-brand-600 dark:text-brand-400">${item.func}</td>
+                        <td class="p-3 text-slate-700 dark:text-slate-300 font-mono text-xs">${item.args}</td>
+                        <td class="p-3 text-slate-600 dark:text-slate-400 font-sans text-xs">${item.desc}</td>
+                        <td class="p-3 font-sans text-xs font-bold text-amber-700 dark:text-amber-300 bg-amber-50/40 dark:bg-amber-950/20">${item.exam}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function filterCheatsheet() {
+            const val = document.getElementById('cheatsheet-search').value;
+            renderCheatsheet(val);
+        }
+
+        // Window Onload
+        window.onload = function() {
+            initTheme();
+            renderCodeEditor();
+            renderBlankExercises();
+            updateSandbox();
+            renderCheatsheet();
+        };
+    </script>
+</body>
+</html>
